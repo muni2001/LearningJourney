@@ -11,7 +11,9 @@ import SwiftUI
 struct LearningJourneyApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            OnboardingView()
+                .preferredColorScheme(.dark)
+                .tint(Color("learn"))
         }
     }
 }

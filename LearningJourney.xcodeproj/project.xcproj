@@ -11,6 +11,7 @@
     ],
   },
   "files": [
+    { "path": "Assets.xcassets", "target-membership": [ "LearningJourney/resources" ] },
     { "kind": "folder", "path": "LearningJourney", "target-membership": [ "LearningJourney" ] },
     {
       "kind": "group",
