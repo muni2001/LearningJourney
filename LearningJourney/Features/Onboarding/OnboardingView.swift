@@ -11,6 +11,7 @@ struct OnboardingView: View {
     @StateObject private var viewModel = OnboardingViewModel()
     
     var body: some View {
+        
         ZStack {
             Color.black.ignoresSafeArea()
 
@@ -109,10 +110,15 @@ struct OnboardingView: View {
                         .font(.system(size: 13))
                         .foregroundColor(.gray)
                 }
-                .padding(.bottom, 20)
+                .padding(.bottom, -10)
             }
             .padding(.horizontal, 24)
         }
+        .navigationDestination(isPresented: $viewModel.navigateToActivity) {
+            CurrentDayView(learningSubject: viewModel.learningSubject,
+                           duration: viewModel.selectedDuration)
+        }
+        .toolbar(.hidden, for: .navigationBar)
     }
 }
 #Preview {
