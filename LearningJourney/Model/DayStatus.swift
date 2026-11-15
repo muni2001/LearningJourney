@@ -11,4 +11,4 @@ enum DayStatus {
     case normal
     case learned
     case frozen
-} 
+}

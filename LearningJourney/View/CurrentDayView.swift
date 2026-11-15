@@ -8,15 +8,7 @@
 import SwiftUI
 
 struct CurrentDayView: View {
-    @StateObject private var viewModel: CurrentDayViewModel
-
-    init(learningSubject: String, duration: String) {
-        _viewModel = StateObject(
-            wrappedValue: CurrentDayViewModel(learningSubject: learningSubject,
-                                              duration: duration)
-        )
-    }
-
+    @StateObject private var viewModel = CurrentDayViewModel()
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -203,5 +195,5 @@ struct CurrentDayView: View {
 }
 
 #Preview {
-    CurrentDayView(learningSubject: "Swift", duration: "Week")
+    CurrentDayView()
 }

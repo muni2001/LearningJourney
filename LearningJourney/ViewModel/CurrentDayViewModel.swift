@@ -11,31 +11,53 @@ import Combine
 
 class CurrentDayViewModel: ObservableObject {
 
-    let learningSubject: String
-    let duration: String
+    // The goal now comes from the shared service (it can be nil, e.g. in a Preview)
+    @Published private(set) var currentGoal: LearningGoal?
 
     // State
     @Published var streakCount: Int = 0
     @Published var freezeCount: Int = 0
     @Published var dayStatus: DayStatus = .normal
 
-    init(learningSubject: String, duration: String) {
-        self.learningSubject = learningSubject
-        self.duration = duration
+    // Navigation trigger for the pencil button
+    @Published var showChangeGoal = false
+
+    private let service: GoalStorageService
+    private var cancellables = Set<AnyCancellable>()
+
+    init(service: GoalStorageService = .shared) {
+        self.service = service
+        self.currentGoal = service.currentGoal
+
+        // Listen to the service: when the goal changes, start fresh
+        service.$currentGoal
+            .dropFirst()
+            .sink { [weak self] newGoal in
+                self?.goalChanged(to: newGoal)
+            }
+            .store(in: &cancellables)
+    }
+
+    private func goalChanged(to newGoal: LearningGoal?) {
+        currentGoal = newGoal
+        streakCount = 0
+        freezeCount = 0
+        dayStatus = .normal
     }
 
 
-    var freezeLimit: Int {
-        switch duration {
-        case "Week":  return 2
-        case "Month": return 8
-        case "Year":  return 96
-        default:      return 2
-        }
-    }
+
+    var duration: LearningDuration { currentGoal?.duration ?? .week }
+
+    var freezeLimit: Int { duration.freezeLimit }
 
     var allFreezesUsed: Bool { freezeCount >= freezeLimit }
+
+
+    // Interaction: can the button be pressed at all?
     var isFreezeDisabled: Bool { allFreezesUsed && dayStatus != .frozen }
+
+    // Appearance: should the Freeze button look gray?
     var isFreezeDimmed: Bool { dayStatus == .frozen || isFreezeDisabled }
 
     var logButtonTitle: String {
@@ -63,28 +85,9 @@ class CurrentDayViewModel: ObservableObject {
         return formatter.string(from: Date())
     }
 
+    var weekDays: [WeekDay] { WeekDay.currentWeek() }
 
-    var weekDays: [WeekDay] {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.firstWeekday = 1
 
-        guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: Date())?.start else {
-            return []
-        }
-
-        let letters = ["S", "M", "T", "W", "T", "F", "S"]
-
-        return (0..<7).compactMap { offset in
-            guard let date = calendar.date(byAdding: .day, value: offset, to: weekStart) else {
-                return nil
-            }
-            let number = calendar.component(.day, from: date)
-            return WeekDay(id: number,
-                           letter: letters[offset],
-                           number: number,
-                           isToday: calendar.isDateInToday(date))
-        }
-    }
 
     func logAsLearnedTapped() {
         switch dayStatus {
@@ -117,10 +120,8 @@ class CurrentDayViewModel: ObservableObject {
     }
 
     func setGoalTapped() {
-        print("Set a goal tapped - page will be added later")
+        showChangeGoal = true
     }
-
-
 
     private func applyLearned() {
         streakCount += 1

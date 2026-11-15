@@ -44,7 +44,7 @@ struct OnboardingView: View {
                         .foregroundColor(.white)
                     
                     VStack(alignment: .leading, spacing: 8) {
-                        TextField("", text: $viewModel.learningSubject, prompt: Text("Enter your goal").foregroundColor(.gray))
+                        TextField("", text: $viewModel.learningSubject, prompt: Text("Swift").foregroundColor(.gray))
                             .foregroundColor(.white)
                             .font(.system(size: 18, weight: .medium))
                         
@@ -61,11 +61,11 @@ struct OnboardingView: View {
                         .foregroundColor(.white)
                     
                     HStack(spacing: 13) {
-                        ForEach(viewModel.durations, id: \.self) { duration in
+                        ForEach(LearningDuration.allCases, id: \.self) { duration in
                             Button(action: {
                                 viewModel.selectedDuration = duration
                             }) {
-                                Text(duration)
+                                Text(duration.rawValue)
                                     .font(.system(size: 18, weight: .medium))
                                     .foregroundColor(viewModel.selectedDuration == duration ? .white : .gray)
                                     .padding(.horizontal, 24)
@@ -115,8 +115,7 @@ struct OnboardingView: View {
             .padding(.horizontal, 24)
         }
         .navigationDestination(isPresented: $viewModel.navigateToActivity) {
-            CurrentDayView(learningSubject: viewModel.learningSubject,
-                           duration: viewModel.selectedDuration)
+            CurrentDayView()
         }
         .toolbar(.hidden, for: .navigationBar)
     }
