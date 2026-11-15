@@ -1,5 +1,5 @@
 //
-//  CurrentDayView.swift
+//  GoalCompletionView.swift
 //  LearningJourney
 //
 //  Created by Monerah Almousa on 30/05/1448 AH.
@@ -7,13 +7,18 @@
 
 import SwiftUI
 
-struct CurrentDayView: View {
-    @StateObject private var viewModel: CurrentDayViewModel
+struct GoalCompletionView: View {
+    @StateObject private var viewModel: GoalCompletionViewModel
 
-    init(learningSubject: String, duration: String) {
+    init(result: GoalResult,
+         weekDays: [WeekDay] = WeekDay.currentWeek(),
+         streakCount: Int = 0,
+         freezeCount: Int = 0) {
         _viewModel = StateObject(
-            wrappedValue: CurrentDayViewModel(learningSubject: learningSubject,
-                                              duration: duration)
+            wrappedValue: GoalCompletionViewModel(result: result,
+                                                  weekDays: weekDays,
+                                                  streakCount: streakCount,
+                                                  freezeCount: freezeCount)
         )
     }
 
@@ -26,26 +31,18 @@ struct CurrentDayView: View {
                 weekStrip
                 statsCards
 
+                resultBlock
+                    .padding(.top, 50)
+
+                setGoalButton
+                    .padding(.top, 40)
+
                 Spacer()
-
-                logButton
-
-                Spacer()
-
-                VStack(spacing: 12) {
-                    freezeButton
-
-                    Text(viewModel.freezeUsageText)
-                        .font(.system(size: 13))
-                        .foregroundColor(.gray)
-                }
-                .padding(.bottom, 20)
             }
             .padding(.horizontal, 24)
         }
         .toolbar(.hidden, for: .navigationBar)
     }
-
 
     private var header: some View {
         HStack(alignment: .top) {
@@ -84,7 +81,6 @@ struct CurrentDayView: View {
         .buttonStyle(.plain)
     }
 
-
     private var weekStrip: some View {
         HStack(spacing: 0) {
             ForEach(viewModel.weekDays) { day in
@@ -95,34 +91,30 @@ struct CurrentDayView: View {
 
                     Text("\(day.number)")
                         .font(.system(size: 25, weight: .medium))
-                        .foregroundColor(dayTextColor(day))
+                        .foregroundColor(dayTextColor(day.status))
                         .frame(width: 44, height: 44)
-                        .background(Circle().fill(dayCircleColor(day)))
+                        .background(Circle().fill(dayCircleColor(day.status)))
                 }
                 .frame(maxWidth: .infinity)
             }
         }
     }
 
-    private func dayCircleColor(_ day: WeekDay) -> Color {
-        guard day.isToday else { return .clear }
-        switch viewModel.dayStatus {
-        case .normal:  return Color("learn")
+    private func dayCircleColor(_ status: DayStatus) -> Color {
+        switch status {
+        case .normal:  return .clear
         case .learned: return Color("learn").opacity(0.2)
         case .frozen:  return Color("freeze").opacity(0.2)
         }
     }
 
-    private func dayTextColor(_ day: WeekDay) -> Color {
-        guard day.isToday else { return .white }
-        switch viewModel.dayStatus {
+    private func dayTextColor(_ status: DayStatus) -> Color {
+        switch status {
         case .normal:  return .white
         case .learned: return Color("learn")
         case .frozen:  return Color("freeze")
         }
     }
-
-
     private var statsCards: some View {
         HStack(spacing: 13) {
             statCard(icon: "flame.fill",
@@ -155,54 +147,75 @@ struct CurrentDayView: View {
         .frame(height: 100)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 30))
     }
+    private var resultBlock: some View {
+        VStack(spacing: 10) {
+            Image(systemName: viewModel.iconName)
+                .font(.system(size: 60))
+                .foregroundColor(Color("learn"))
+                .padding(.bottom, 14)
 
+            Text(viewModel.title)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.white)
+                .multilineTextAlignment(.center)
 
-    private var logButton: some View {
+            Text(viewModel.subtitle)
+                .font(.system(size: 15))
+                .foregroundColor(.gray)
+                .multilineTextAlignment(.center)
+        }
+    }
+
+    private var setGoalButton: some View {
         Button {
-            viewModel.logAsLearnedTapped()
+            viewModel.setGoalTapped()
         } label: {
-            Text(viewModel.logButtonTitle)
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundColor(logTextColor)
-                .frame(width: 290, height: 290)
-                .glassEffect(logGlass, in: Circle())
+            HStack(spacing: 8) {
+                Image(systemName: "pencil.and.outline")
+                Text("Set a goal")
+            }
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundColor(.white)
+            .padding(.horizontal, 30)
+            .padding(.vertical, 16)
+            .glassEffect(.regular.tint(Color("learn")), in: Capsule())
         }
         .buttonStyle(.plain)
-        .disabled(viewModel.isLogDisabled)
-    }
-
-    private var logGlass: Glass {
-        viewModel.dayStatus == .normal
-            ? .regular.tint(Color("learn"))
-            : .regular
-    }
-
-    private var logTextColor: Color {
-        viewModel.dayStatus == .learned ? .gray : .white
-    }
-
-
-    private var freezeButton: some View {
-        Button {
-            viewModel.freezeTapped()
-        } label: {
-            Text(viewModel.freezeButtonTitle)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(viewModel.isFreezeDisabled ? .gray : .white)
-                .frame(width: 270, height: 48)
-                .glassEffect(freezeGlass, in: Capsule())
-        }
-        .buttonStyle(.plain)
-        .disabled(viewModel.isFreezeDisabled)
-    }
-
-    private var freezeGlass: Glass {
-        viewModel.isFreezeDisabled
-            ? .regular
-            : .regular.tint(Color("freeze"))
     }
 }
 
-#Preview {
-    CurrentDayView(learningSubject: "Swift", duration: "Week")
+#Preview("Fresh start (all zeros)") {
+    GoalCompletionView(result: .notMet)
+        .preferredColorScheme(.dark)
+}
+
+private func sampleWeek(_ statuses: [DayStatus]) -> [WeekDay] {
+    let letters = ["S", "M", "T", "W", "T", "F", "S"]
+    return statuses.enumerated().map { index, status in
+        WeekDay(id: 20 + index,
+                letter: letters[index],
+                number: 20 + index,
+                isToday: false,
+                status: status)
+    }
+}
+
+#Preview("Sample: Completed") {
+    GoalCompletionView(
+        result: .completed,
+        weekDays: sampleWeek([.learned, .learned, .learned, .frozen, .frozen, .normal, .normal]),
+        streakCount: 3,
+        freezeCount: 2
+    )
+    .preferredColorScheme(.dark)
+}
+
+#Preview("Sample: Not Met") {
+    GoalCompletionView(
+        result: .notMet,
+        weekDays: sampleWeek([.learned, .learned, .normal, .frozen, .frozen, .normal, .normal]),
+        streakCount: 2,
+        freezeCount: 2
+    )
+    .preferredColorScheme(.dark)
 }

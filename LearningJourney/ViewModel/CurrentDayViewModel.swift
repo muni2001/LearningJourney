@@ -9,20 +9,6 @@ import SwiftUI
 import Combine
 
 
-enum DayStatus {
-    case normal
-    case learned
-    case frozen
-}
-
-struct WeekDay: Identifiable {
-    let id: Int
-    let letter: String
-    let number: Int
-    let isToday: Bool
-}
-
-
 class CurrentDayViewModel: ObservableObject {
 
     let learningSubject: String
@@ -49,10 +35,8 @@ class CurrentDayViewModel: ObservableObject {
     }
 
     var allFreezesUsed: Bool { freezeCount >= freezeLimit }
-
-
-    var isLogDisabled: Bool { dayStatus != .normal }
-    var isFreezeDisabled: Bool { dayStatus != .normal || allFreezesUsed }
+    var isFreezeDisabled: Bool { allFreezesUsed && dayStatus != .frozen }
+    var isFreezeDimmed: Bool { dayStatus == .frozen || isFreezeDisabled }
 
     var logButtonTitle: String {
         dayStatus == .learned ? "Logged as Learned" : "Log as Learned"
@@ -82,7 +66,7 @@ class CurrentDayViewModel: ObservableObject {
 
     var weekDays: [WeekDay] {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.firstWeekday = 1   
+        calendar.firstWeekday = 1
 
         guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: Date())?.start else {
             return []
@@ -102,17 +86,30 @@ class CurrentDayViewModel: ObservableObject {
         }
     }
 
-
     func logAsLearnedTapped() {
-        guard !isLogDisabled else { return }
-        streakCount += 1
-        dayStatus = .learned
+        switch dayStatus {
+        case .normal:
+            applyLearned()
+        case .learned:
+            undoLearned()
+        case .frozen:
+            undoFreeze()
+            applyLearned()
+        }
     }
 
     func freezeTapped() {
         guard !isFreezeDisabled else { return }
-        freezeCount += 1
-        dayStatus = .frozen
+
+        switch dayStatus {
+        case .normal:
+            applyFreeze()
+        case .frozen:
+            undoFreeze()
+        case .learned:
+            undoLearned()
+            applyFreeze()
+        }
     }
 
     func calendarTapped() {
@@ -121,5 +118,27 @@ class CurrentDayViewModel: ObservableObject {
 
     func setGoalTapped() {
         print("Set a goal tapped - page will be added later")
+    }
+
+
+
+    private func applyLearned() {
+        streakCount += 1
+        dayStatus = .learned
+    }
+
+    private func undoLearned() {
+        streakCount = max(streakCount - 1, 0)
+        dayStatus = .normal
+    }
+
+    private func applyFreeze() {
+        freezeCount += 1
+        dayStatus = .frozen
+    }
+
+    private func undoFreeze() {
+        freezeCount = max(freezeCount - 1, 0)
+        dayStatus = .normal
     }
 }

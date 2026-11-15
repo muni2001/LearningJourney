@@ -44,7 +44,7 @@ struct OnboardingView: View {
                         .foregroundColor(.white)
                     
                     VStack(alignment: .leading, spacing: 8) {
-                        TextField("", text: $viewModel.learningSubject, prompt: Text("Swift").foregroundColor(.gray))
+                        TextField("", text: $viewModel.learningSubject, prompt: Text("Enter your goal").foregroundColor(.gray))
                             .foregroundColor(.white)
                             .font(.system(size: 18, weight: .medium))
                         
