@@ -22,6 +22,10 @@ class CurrentDayViewModel: ObservableObject {
     // Navigation trigger for the pencil button
     @Published var showChangeGoal = false
 
+    // Goal completion page (shown when the goal period ends)
+    @Published var showCompletion = false
+    @Published private(set) var completionResult: GoalResult = .notMet
+
     private let service: GoalStorageService
     private var cancellables = Set<AnyCancellable>()
 
@@ -43,9 +47,11 @@ class CurrentDayViewModel: ObservableObject {
         streakCount = 0
         freezeCount = 0
         dayStatus = .normal
+        showCompletion = false   // closes the completion pages that are open on top
     }
 
 
+    // MARK: - Freeze rules
 
     var duration: LearningDuration { currentGoal?.duration ?? .week }
 
@@ -88,6 +94,7 @@ class CurrentDayViewModel: ObservableObject {
     var weekDays: [WeekDay] { WeekDay.currentWeek() }
 
 
+    // MARK: - Actions
 
     func logAsLearnedTapped() {
         switch dayStatus {
@@ -119,9 +126,23 @@ class CurrentDayViewModel: ObservableObject {
         print("Calendar tapped - page will be added later")
     }
 
+    /// Pencil button: open the Change Learning Goal page
     func setGoalTapped() {
         showChangeGoal = true
     }
+
+
+    #if DEBUG
+    /// TEMPORARY: opens the completion page so we can test the flow.
+    /// Remove it when the real "goal period ended" trigger exists.
+    func debugShowCompletion(_ result: GoalResult) {
+        completionResult = result
+        showCompletion = true
+    }
+    #endif
+
+
+    // MARK: - Building blocks
 
     private func applyLearned() {
         streakCount += 1

@@ -20,6 +20,7 @@
         { "path": "<PRODUCTS>/LearningJourney.app", "id": "BEA2DA4D30A1B2B300C0278C", "type": "wrapper.application", "index": false },
       ],
     },
+    { "kind": "folder", "path": "shared", "target-membership": [ "LearningJourney" ] },
   ],
   "targets": [
     {

@@ -78,7 +78,7 @@ struct ChangeLearningGoalView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 TextField("", text: $viewModel.newSubject,
-                          prompt: Text("Swift").foregroundColor(.gray))
+                          prompt: Text("Enter your new goal").foregroundColor(.gray))
                     .foregroundColor(.white)
                     .font(.system(size: 18, weight: .medium))
 

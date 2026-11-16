@@ -16,6 +16,9 @@ class GoalCompletionViewModel: ObservableObject {
     let streakCount: Int
     let freezeCount: Int
 
+    // Navigation trigger for the "Set a goal" buttons
+    @Published var showSetNewGoal = false
+
     init(result: GoalResult,
          weekDays: [WeekDay] = WeekDay.currentWeek(),
          streakCount: Int = 0,
@@ -27,6 +30,7 @@ class GoalCompletionViewModel: ObservableObject {
     }
 
 
+    // MARK: - Texts and icon (decided by the result)
 
     var iconName: String {
         switch result {
@@ -50,6 +54,7 @@ class GoalCompletionViewModel: ObservableObject {
     }
 
 
+    // MARK: - Helpers
 
     func daysText(_ count: Int) -> String {
         count == 1 ? "\(count) day" : "\(count) days"
@@ -64,12 +69,13 @@ class GoalCompletionViewModel: ObservableObject {
     }
 
 
+    // MARK: - Actions
 
     func calendarTapped() {
         print("Calendar tapped - page will be added later")
     }
 
     func setGoalTapped() {
-        print("Set a goal tapped - page will be added later")
+        showSetNewGoal = true
     }
 }

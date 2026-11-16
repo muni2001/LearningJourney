@@ -36,6 +36,15 @@ struct CurrentDayView: View {
             .padding(.horizontal, 24)
         }
         .toolbar(.hidden, for: .navigationBar)
+        .navigationDestination(isPresented: $viewModel.showChangeGoal) {
+            ChangeLearningGoalView()
+        }
+        .navigationDestination(isPresented: $viewModel.showCompletion) {
+            GoalCompletionView(result: viewModel.completionResult,
+                               weekDays: viewModel.weekDays,
+                               streakCount: viewModel.streakCount,
+                               freezeCount: viewModel.freezeCount)
+        }
     }
 
 
@@ -45,6 +54,9 @@ struct CurrentDayView: View {
                 Text("Activity")
                     .font(.system(size: 34, weight: .bold))
                     .foregroundColor(.white)
+                    #if DEBUG
+                    .onLongPressGesture { viewModel.debugShowCompletion(.notMet) }
+                    #endif
 
                 Text(viewModel.todayText)
                     .font(.system(size: 15))
@@ -179,7 +191,7 @@ struct CurrentDayView: View {
         } label: {
             Text(viewModel.freezeButtonTitle)
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(viewModel.isFreezeDisabled ? .gray : .white)
+                .foregroundColor(viewModel.isFreezeDimmed ? .gray : .white)
                 .frame(width: 270, height: 48)
                 .glassEffect(freezeGlass, in: Capsule())
         }
@@ -195,5 +207,8 @@ struct CurrentDayView: View {
 }
 
 #Preview {
-    CurrentDayView()
+    NavigationStack {
+        CurrentDayView()
+    }
+    .preferredColorScheme(.dark)
 }

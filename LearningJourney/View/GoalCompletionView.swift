@@ -42,7 +42,13 @@ struct GoalCompletionView: View {
             .padding(.horizontal, 24)
         }
         .toolbar(.hidden, for: .navigationBar)
+        .navigationDestination(isPresented: $viewModel.showSetNewGoal) {
+            SetNewGoalView(previousResult: viewModel.result)
+        }
     }
+
+
+    // MARK: - Header
 
     private var header: some View {
         HStack(alignment: .top) {
@@ -81,6 +87,9 @@ struct GoalCompletionView: View {
         .buttonStyle(.plain)
     }
 
+
+    // MARK: - Week strip (each day is colored by its own status)
+
     private var weekStrip: some View {
         HStack(spacing: 0) {
             ForEach(viewModel.weekDays) { day in
@@ -115,6 +124,10 @@ struct GoalCompletionView: View {
         case .frozen:  return Color("freeze")
         }
     }
+
+
+    // MARK: - Streak / Freeze cards
+
     private var statsCards: some View {
         HStack(spacing: 13) {
             statCard(icon: "flame.fill",
@@ -147,6 +160,10 @@ struct GoalCompletionView: View {
         .frame(height: 100)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 30))
     }
+
+
+    // MARK: - Result (icon + texts)
+
     private var resultBlock: some View {
         VStack(spacing: 10) {
             Image(systemName: viewModel.iconName)
@@ -166,6 +183,9 @@ struct GoalCompletionView: View {
         }
     }
 
+
+    // MARK: - Set a goal button
+
     private var setGoalButton: some View {
         Button {
             viewModel.setGoalTapped()
@@ -184,9 +204,17 @@ struct GoalCompletionView: View {
     }
 }
 
+
+// MARK: - Previews
+// The page itself never contains numbers: everything comes from the init (zeros by default).
+// The two "Sample" previews only use made-up numbers so we can compare with the design.
+// Each preview is inside a NavigationStack so the "Set a goal" button can navigate.
+
 #Preview("Fresh start (all zeros)") {
-    GoalCompletionView(result: .notMet)
-        .preferredColorScheme(.dark)
+    NavigationStack {
+        GoalCompletionView(result: .notMet)
+    }
+    .preferredColorScheme(.dark)
 }
 
 private func sampleWeek(_ statuses: [DayStatus]) -> [WeekDay] {
@@ -201,21 +229,25 @@ private func sampleWeek(_ statuses: [DayStatus]) -> [WeekDay] {
 }
 
 #Preview("Sample: Completed") {
-    GoalCompletionView(
-        result: .completed,
-        weekDays: sampleWeek([.learned, .learned, .learned, .frozen, .frozen, .normal, .normal]),
-        streakCount: 3,
-        freezeCount: 2
-    )
+    NavigationStack {
+        GoalCompletionView(
+            result: .completed,
+            weekDays: sampleWeek([.learned, .learned, .learned, .frozen, .frozen, .normal, .normal]),
+            streakCount: 3,
+            freezeCount: 2
+        )
+    }
     .preferredColorScheme(.dark)
 }
 
 #Preview("Sample: Not Met") {
-    GoalCompletionView(
-        result: .notMet,
-        weekDays: sampleWeek([.learned, .learned, .normal, .frozen, .frozen, .normal, .normal]),
-        streakCount: 2,
-        freezeCount: 2
-    )
+    NavigationStack {
+        GoalCompletionView(
+            result: .notMet,
+            weekDays: sampleWeek([.learned, .learned, .normal, .frozen, .frozen, .normal, .normal]),
+            streakCount: 2,
+            freezeCount: 2
+        )
+    }
     .preferredColorScheme(.dark)
 }

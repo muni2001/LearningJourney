@@ -6,13 +6,43 @@
 //
 
 import SwiftUI
+import Combine
 
-struct SetNewGoalViewModel: View {
-    var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+class SetNewGoalViewModel: ObservableObject {
+
+    @Published var newSubject: String = ""
+    @Published var selectedDuration: LearningDuration = .week
+
+    @Published var showStartAlert = false
+    @Published var shakeTrigger = 0
+
+    private let previousResult: GoalResult
+    private let service: GoalStorageService
+
+    init(previousResult: GoalResult, service: GoalStorageService = .shared) {
+        self.previousResult = previousResult
+        self.service = service
     }
-}
 
-#Preview {
-    SetNewGoalViewModel()
+    private var trimmedSubject: String {
+        newSubject.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    func confirmTapped() {
+        if trimmedSubject.isEmpty {
+            shakeTrigger += 1
+        } else {
+            showStartAlert = true
+        }
+    }
+
+    func cancelStart() {
+        showStartAlert = false
+    }
+    func startConfirmed() {
+        service.startNewGoal(subject: trimmedSubject,
+                             duration: selectedDuration,
+                             previousResult: previousResult)
+        showStartAlert = false
+    }
 }
