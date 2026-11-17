@@ -11,4 +11,13 @@ enum DayStatus {
     case normal
     case learned
     case frozen
+
+    /// Text shown to the user
+    var displayName: String {
+        switch self {
+        case .normal:  return "No activity"
+        case .learned: return "Learned"
+        case .frozen:  return "Freezed"
+        }
+    }
 }

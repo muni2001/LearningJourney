@@ -21,6 +21,7 @@ class CurrentDayViewModel: ObservableObject {
 
     // Navigation trigger for the pencil button
     @Published var showChangeGoal = false
+    @Published var showCalendar = false
 
     // Goal completion page (shown when the goal period ends)
     @Published var showCompletion = false
@@ -91,7 +92,12 @@ class CurrentDayViewModel: ObservableObject {
         return formatter.string(from: Date())
     }
 
-    var weekDays: [WeekDay] { WeekDay.currentWeek() }
+    /// The 7 days of this week, each one with its real status from the history
+    var weekDays: [WeekDay] {
+        WeekDay.currentWeek { date in
+            self.service.day(on: date)?.status ?? .normal
+        }
+    }
 
 
     // MARK: - Actions
@@ -123,7 +129,7 @@ class CurrentDayViewModel: ObservableObject {
     }
 
     func calendarTapped() {
-        print("Calendar tapped - page will be added later")
+        showCalendar = true
     }
 
     /// Pencil button: open the Change Learning Goal page
@@ -146,21 +152,27 @@ class CurrentDayViewModel: ObservableObject {
 
     private func applyLearned() {
         streakCount += 1
-        dayStatus = .learned
+        setToday(.learned)
     }
 
     private func undoLearned() {
         streakCount = max(streakCount - 1, 0)
-        dayStatus = .normal
+        setToday(.normal)
     }
 
     private func applyFreeze() {
         freezeCount += 1
-        dayStatus = .frozen
+        setToday(.frozen)
     }
 
     private func undoFreeze() {
         freezeCount = max(freezeCount - 1, 0)
-        dayStatus = .normal
+        setToday(.normal)
+    }
+
+    /// Updates today's status here AND in the shared history (so the Calendar can show it)
+    private func setToday(_ status: DayStatus) {
+        dayStatus = status
+        service.setStatus(status)
     }
 }

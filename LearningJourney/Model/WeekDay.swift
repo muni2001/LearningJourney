@@ -17,7 +17,9 @@ struct WeekDay: Identifiable {
 
 extension WeekDay {
 
-    static func currentWeek() -> [WeekDay] {
+    /// The 7 days of the current week (Sunday first).
+    /// statusFor tells the status of each date. By default every day is empty (.normal).
+    static func currentWeek(statusFor: (Date) -> DayStatus = { _ in .normal }) -> [WeekDay] {
         var calendar = Calendar(identifier: .gregorian)
         calendar.firstWeekday = 1
 
@@ -35,7 +37,8 @@ extension WeekDay {
             return WeekDay(id: number,
                            letter: letters[offset],
                            number: number,
-                           isToday: calendar.isDateInToday(date))
+                           isToday: calendar.isDateInToday(date),
+                           status: statusFor(date))
         }
     }
 }

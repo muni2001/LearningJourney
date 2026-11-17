@@ -8,7 +8,7 @@
 import Foundation
 import Combine
 
-/// One shared place that owns the goals.
+/// One shared place that owns the goals and the days history.
 /// Every ViewModel reads from it and asks it to change things.
 class GoalStorageService: ObservableObject {
 
@@ -19,8 +19,15 @@ class GoalStorageService: ObservableObject {
     @Published private(set) var currentGoal: LearningGoal?
     @Published private(set) var pastGoals: [LearningGoal] = []
 
+    /// History of the days: key = start of the day.
+    /// A day that is not in the dictionary means "no activity".
+    @Published private(set) var days: [Date: LearningDay] = [:]
+
     // Not private, so Previews can create their own instance when needed
     init() {}
+
+
+    // MARK: - Goals
 
     /// First goal (from Onboarding)
     func startGoal(subject: String, duration: LearningDuration) {
@@ -47,10 +54,51 @@ class GoalStorageService: ObservableObject {
         currentGoal = LearningGoal(subject: subject, duration: duration)
     }
 
+    /// Finds a goal (current or past) by its id. Optional: it may not exist.
+    func goal(withID id: UUID) -> LearningGoal? {
+        if let current = currentGoal, current.id == id {
+            return current
+        }
+        return pastGoals.first { $0.id == id }
+    }
+
+    /// The first day of the journey (oldest goal start or oldest recorded day).
+    var journeyStartDate: Date? {
+        let goals = [currentGoal].compactMap { $0 } + pastGoals
+        let goalDates = goals.map { $0.startDate }
+        return (goalDates + Array(days.keys)).min()
+    }
+
+
+    // MARK: - Days history
+
+    /// Saves the status of a day. Setting .normal removes the record (undo).
+    func setStatus(_ status: DayStatus, on date: Date = Date()) {
+        let key = Self.startOfDay(date)
+
+        if status == .normal {
+            days[key] = nil
+        } else {
+            days[key] = LearningDay(date: key, status: status, goalID: currentGoal?.id)
+        }
+    }
+
+    /// The record of a day, or nil if the user did nothing that day.
+    func day(on date: Date) -> LearningDay? {
+        days[Self.startOfDay(date)]
+    }
+
+
+    // MARK: - Private helpers
+
     /// Moves the current goal to the past goals list with the given status.
     private func archiveCurrentGoal(as status: GoalStatus) {
         guard var oldGoal = currentGoal else { return }
         oldGoal.status = status
         pastGoals.append(oldGoal)
+    }
+
+    private static func startOfDay(_ date: Date) -> Date {
+        Calendar(identifier: .gregorian).startOfDay(for: date)
     }
 }

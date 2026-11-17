@@ -39,6 +39,9 @@ struct CurrentDayView: View {
         .navigationDestination(isPresented: $viewModel.showChangeGoal) {
             ChangeLearningGoalView()
         }
+        .navigationDestination(isPresented: $viewModel.showCalendar) {
+            CalendarView()
+        }
         .navigationDestination(isPresented: $viewModel.showCompletion) {
             GoalCompletionView(result: viewModel.completionResult,
                                weekDays: viewModel.weekDays,
