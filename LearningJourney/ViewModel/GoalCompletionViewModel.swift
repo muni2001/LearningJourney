@@ -18,6 +18,7 @@ class GoalCompletionViewModel: ObservableObject {
 
     // Navigation trigger for the "Set a goal" buttons
     @Published var showSetNewGoal = false
+    @Published var showCalendar = false
 
     init(result: GoalResult,
          weekDays: [WeekDay] = WeekDay.currentWeek(),
@@ -72,7 +73,7 @@ class GoalCompletionViewModel: ObservableObject {
     // MARK: - Actions
 
     func calendarTapped() {
-        print("Calendar tapped - page will be added later")
+        showCalendar = true
     }
 
     func setGoalTapped() {

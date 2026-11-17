@@ -45,6 +45,9 @@ struct GoalCompletionView: View {
         .navigationDestination(isPresented: $viewModel.showSetNewGoal) {
             SetNewGoalView(previousResult: viewModel.result)
         }
+        .navigationDestination(isPresented: $viewModel.showCalendar) {
+            CalendarView()
+        }
     }
 
 
