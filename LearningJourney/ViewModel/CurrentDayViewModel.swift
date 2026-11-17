@@ -138,14 +138,32 @@ class CurrentDayViewModel: ObservableObject {
     }
 
 
-    #if DEBUG
-    /// TEMPORARY: opens the completion page so we can test the flow.
-    /// Remove it when the real "goal period ended" trigger exists.
-    func debugShowCompletion(_ result: GoalResult) {
-        completionResult = result
-        showCompletion = true
+#if DEBUG
+@Published var showDebugPanel = false
+
+/// DEBUG: writes the chosen statuses for this week, then opens the completion page.
+/// All 7 days learned/frozen = completed, otherwise = notMet.
+func debugApplyWeek(_ statuses: [DayStatus]) {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.firstWeekday = 1
+    guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: Date())?.start else { return }
+
+    for (offset, status) in statuses.enumerated() {
+        guard let date = calendar.date(byAdding: .day, value: offset, to: weekStart) else { continue }
+        service.setStatus(status, on: date)
+        if calendar.isDateInToday(date) { dayStatus = status }
     }
-    #endif
+
+    streakCount = statuses.filter { $0 == .learned }.count
+    freezeCount = statuses.filter { $0 == .frozen }.count
+    completionResult = statuses.allSatisfy { $0 != .normal } ? .completed : .notMet
+
+    // wait for the sheet to close before navigating
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+        self?.showCompletion = true
+    }
+}
+#endif
 
 
     // MARK: - Building blocks

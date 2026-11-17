@@ -48,6 +48,13 @@ struct CurrentDayView: View {
                                streakCount: viewModel.streakCount,
                                freezeCount: viewModel.freezeCount)
         }
+#if DEBUG
+.sheet(isPresented: $viewModel.showDebugPanel) {
+    DebugWeekSheet(days: viewModel.weekDays) { statuses in
+        viewModel.debugApplyWeek(statuses)
+    }
+}
+#endif
     }
 
 
@@ -57,10 +64,9 @@ struct CurrentDayView: View {
                 Text("Activity")
                     .font(.system(size: 34, weight: .bold))
                     .foregroundColor(.white)
-                    #if DEBUG
-                    .onLongPressGesture { viewModel.debugShowCompletion(.notMet) }
-                    #endif
-
+#if DEBUG
+.onLongPressGesture { viewModel.showDebugPanel = true }
+#endif
                 Text(viewModel.todayText)
                     .font(.system(size: 15))
                     .foregroundColor(.gray)

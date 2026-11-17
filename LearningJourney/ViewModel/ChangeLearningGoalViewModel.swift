@@ -10,29 +10,79 @@ import Combine
 
 class ChangeLearningGoalViewModel: ObservableObject {
 
-    // What the user types / picks
     @Published var newSubject: String = ""
     @Published var selectedDuration: LearningDuration = .week
 
-    // UI triggers
     @Published var showUpdateAlert = false
-    @Published var shakeTrigger = 0      // every +1 makes the field shake once
+    @Published var shakeTrigger = 0
+    @Published var shouldDismiss = false   // the view closes itself when this becomes true
+    enum UpdateAlertKind { case newGoal, durationOnly }
+    @Published var alertKind: UpdateAlertKind = .newGoal
+
+    private enum Change { case none, durationOnly, newGoal }
 
     private let service: GoalStorageService
 
     init(service: GoalStorageService = .shared) {
         self.service = service
+
+        // Start with the current goal already filled in
+        if let goal = service.currentGoal {
+            newSubject = goal.subject
+            selectedDuration = goal.duration
+        }
     }
 
     private var trimmedSubject: String {
         newSubject.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private var change: Change {
+        guard let current = service.currentGoal else { return .newGoal }
+        let edited = GoalDraft(subject: trimmedSubject, duration: selectedDuration)
+
+        if edited == current.draft { return .none }
+        if edited.subject == current.draft.subject { return .durationOnly }
+        return .newGoal
+    }
+    /// Same subject as the current goal? (ignores spaces and letter case)
+    private var isSameSubject: Bool {
+        guard let current = service.currentGoal else { return false }
+        return GoalDraft(subject: trimmedSubject, duration: current.duration).subject
+            == current.draft.subject
+    }
+
+    /// With the same subject, the duration can only stay or grow. A new subject can use any duration.
+    func isDurationAllowed(_ duration: LearningDuration) -> Bool {
+        guard isSameSubject, let current = service.currentGoal else { return true }
+        return duration.dayCount >= current.duration.dayCount
+    }
+
+    /// Called when the subject text changes: if the picked duration became
+    /// shorter than the current one, move it back up.
+    func fixDurationIfNeeded() {
+        guard let current = service.currentGoal else { return }
+        if !isDurationAllowed(selectedDuration) {
+            selectedDuration = current.duration
+        }
+    }
+
+    /// Checkmark button
     /// Checkmark button
     func confirmTapped() {
-        if trimmedSubject.isEmpty {
+        guard !trimmedSubject.isEmpty else {
             shakeTrigger += 1
-        } else {
+            return
+        }
+
+        switch change {
+        case .none:
+            shouldDismiss = true
+        case .durationOnly:
+            alertKind = .durationOnly
+            showUpdateAlert = true
+        case .newGoal:
+            alertKind = .newGoal
             showUpdateAlert = true
         }
     }
@@ -42,7 +92,13 @@ class ChangeLearningGoalViewModel: ObservableObject {
     }
 
     func updateConfirmed() {
-        service.replaceCurrentGoal(subject: trimmedSubject, duration: selectedDuration)
+        switch alertKind {
+        case .durationOnly:
+            // Same goal, longer duration: streak and freezes stay
+            service.updateCurrentGoal(subject: trimmedSubject, duration: selectedDuration)
+        case .newGoal:
+            service.replaceCurrentGoal(subject: trimmedSubject, duration: selectedDuration)
+        }
         showUpdateAlert = false
     }
 }

@@ -29,6 +29,12 @@ struct ChangeLearningGoalView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: viewModel.showUpdateAlert)
         .toolbar(.hidden, for: .navigationBar)
+        .onChange(of: viewModel.newSubject) { _, _ in
+            viewModel.fixDurationIfNeeded()
+        }
+        .onChange(of: viewModel.shouldDismiss) { _, shouldDismiss in
+            if shouldDismiss { dismiss() }
+        }
     }
 
 
@@ -102,6 +108,8 @@ struct ChangeLearningGoalView: View {
 
             HStack(spacing: 13) {
                 ForEach(LearningDuration.allCases, id: \.self) { duration in
+                    let allowed = viewModel.isDurationAllowed(duration)
+
                     Button {
                         viewModel.selectedDuration = duration
                     } label: {
@@ -118,6 +126,8 @@ struct ChangeLearningGoalView: View {
                             )
                     }
                     .buttonStyle(.plain)
+                    .disabled(!allowed)
+                    .opacity(allowed ? 1 : 0.35)
                 }
                 Spacer()
             }
@@ -133,11 +143,13 @@ struct ChangeLearningGoalView: View {
 
             VStack(spacing: 18) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Update goal")
+                    Text(viewModel.alertKind == .newGoal ? "Update goal" : "Change duration?")
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundColor(.white)
 
-                    Text("If you update now, your streak will start over.")
+                    Text(viewModel.alertKind == .newGoal
+                         ? "If you update now, your streak will start over."
+                         : "Your streak and freezes will stay the same, and you can continue your learning journey.")
                         .font(.system(size: 17))
                         .foregroundColor(.white.opacity(0.75))
                         .fixedSize(horizontal: false, vertical: true)
@@ -148,7 +160,10 @@ struct ChangeLearningGoalView: View {
 
                 HStack(spacing: 12) {
                     Button {
+                        let isDurationChange = viewModel.alertKind == .durationOnly
                         viewModel.cancelUpdate()
+                        // Duration change dismissed: go back to the challenge, nothing changes
+                        if isDurationChange { dismiss() }
                     } label: {
                         Text("Dismiss")
                             .font(.system(size: 18, weight: .semibold))

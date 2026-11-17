@@ -10,7 +10,7 @@ import SwiftUI
 struct CalendarView: View {
     @StateObject private var viewModel = CalendarViewModel()
     @Environment(\.dismiss) private var dismiss
-
+    @State private var didScroll = false
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
     private let weekdaySymbols = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
 
@@ -29,10 +29,13 @@ struct CalendarView: View {
                     .padding(.horizontal, 16)
                     .padding(.bottom, 30)
                 }
-                .onAppear {
+                .opacity(didScroll ? 1 : 0)
+                .task {
                     if let id = viewModel.currentMonthID {
+                        try? await Task.sleep(for: .milliseconds(50))
                         proxy.scrollTo(id, anchor: .top)
                     }
+                    didScroll = true
                 }
             }
         }

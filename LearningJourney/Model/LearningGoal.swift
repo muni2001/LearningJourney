@@ -18,3 +18,20 @@ struct LearningGoal: Identifiable, Codable {
         Calendar.current.date(byAdding: .day, value: duration.dayCount, to: startDate)
     }
 }
+/// A comparable "snapshot" of a goal: the subject is normalized so
+/// "English", " english " and "ENGLISH" count as the same goal.
+struct GoalDraft: Equatable {
+    let subject: String
+    let duration: LearningDuration
+
+    init(subject: String, duration: LearningDuration) {
+        self.subject = subject
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        self.duration = duration
+    }
+}
+
+extension LearningGoal {
+    var draft: GoalDraft { GoalDraft(subject: subject, duration: duration) }
+}

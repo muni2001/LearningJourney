@@ -13,6 +13,5 @@ struct LearningDay: Identifiable {
     let date: Date          // always the start of that day
     var status: DayStatus
     var goalID: UUID?       // which goal the user was following that day
-
     var id: Date { date }
 }

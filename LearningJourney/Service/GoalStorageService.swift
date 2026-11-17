@@ -87,6 +87,13 @@ class GoalStorageService: ObservableObject {
     func day(on date: Date) -> LearningDay? {
         days[Self.startOfDay(date)]
     }
+    /// Same goal, just edited (e.g. longer duration). Keeps the id, start date and history.
+    func updateCurrentGoal(subject: String, duration: LearningDuration) {
+        guard var goal = currentGoal else { return }
+        goal.subject = subject
+        goal.duration = duration
+        currentGoal = goal
+    }
 
 
     // MARK: - Private helpers
@@ -102,3 +109,4 @@ class GoalStorageService: ObservableObject {
         Calendar(identifier: .gregorian).startOfDay(for: date)
     }
 }
+
