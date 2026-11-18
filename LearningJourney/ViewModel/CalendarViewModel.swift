@@ -31,7 +31,7 @@ class CalendarViewModel: ObservableObject {
 
     /// All 12 months of every year of the journey (from the start year until the current year).
     var months: [CalendarMonth] {
-        let today = Date()
+        let today = AppClock.now
         let currentYear = calendar.component(.year, from: today)
         let startYear = calendar.component(.year, from: service.journeyStartDate ?? today)
 
@@ -55,7 +55,7 @@ class CalendarViewModel: ObservableObject {
 
     /// Used to scroll to the current month when the page opens.
     var currentMonthID: Date? {
-        monthStart(of: Date())
+        monthStart(of: AppClock.now)
     }
 
     private func monthStart(of date: Date) -> Date? {
@@ -83,7 +83,7 @@ class CalendarViewModel: ObservableObject {
                                       date: date,
                                       number: day,
                                       status: service.day(on: date)?.status ?? .normal,
-                                      isToday: calendar.isDateInToday(date)))
+                                      isToday: calendar.isDate(date, inSameDayAs: AppClock.now)))
         }
 
         return CalendarMonth(id: start, title: format(start, "MMMM yyyy"), cells: cells)

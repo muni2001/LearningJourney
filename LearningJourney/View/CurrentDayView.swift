@@ -6,9 +6,12 @@
 //
 
 import SwiftUI
+import Combine
 
 struct CurrentDayView: View {
     @StateObject private var viewModel = CurrentDayViewModel()
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -36,6 +39,14 @@ struct CurrentDayView: View {
             .padding(.horizontal, 24)
         }
         .toolbar(.hidden, for: .navigationBar)
+        // Time rules: check when the page appears, when the app comes back, and every 30 seconds
+        .onAppear { viewModel.refresh() }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active { viewModel.refresh() }
+        }
+        .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { _ in
+            viewModel.refresh()
+        }
         .navigationDestination(isPresented: $viewModel.showChangeGoal) {
             ChangeLearningGoalView()
         }
@@ -70,6 +81,10 @@ struct CurrentDayView: View {
                 Text(viewModel.todayText)
                     .font(.system(size: 15))
                     .foregroundColor(.gray)
+#if DEBUG
+.onLongPressGesture { viewModel.debugTimeTravel(hours: 24) }   // +1 day
+.onTapGesture(count: 2) { viewModel.debugTimeTravel(hours: 33) }   // +33 hours
+#endif
             }
 
             Spacer()
@@ -117,21 +132,24 @@ struct CurrentDayView: View {
         }
     }
 
+    /// Today follows the buttons (dayStatus). The other days come from the history.
+    private func status(of day: WeekDay) -> DayStatus {
+        day.isToday ? viewModel.dayStatus : day.status
+    }
+
     private func dayCircleColor(_ day: WeekDay) -> Color {
-        guard day.isToday else { return .clear }
-        switch viewModel.dayStatus {
-        case .normal:  return Color("learn")
+        switch status(of: day) {
         case .learned: return Color("learn").opacity(0.2)
         case .frozen:  return Color("freeze").opacity(0.2)
+        case .normal:  return day.isToday ? Color("learn") : .clear
         }
     }
 
     private func dayTextColor(_ day: WeekDay) -> Color {
-        guard day.isToday else { return .white }
-        switch viewModel.dayStatus {
-        case .normal:  return .white
+        switch status(of: day) {
         case .learned: return Color("learn")
         case .frozen:  return Color("freeze")
+        case .normal:  return .white
         }
     }
 

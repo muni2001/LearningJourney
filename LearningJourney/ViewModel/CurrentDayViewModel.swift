@@ -19,6 +19,9 @@ class CurrentDayViewModel: ObservableObject {
     @Published var freezeCount: Int = 0
     @Published var dayStatus: DayStatus = .normal
 
+    // The day the page is showing. When it changes (12AM) the page redraws itself.
+    @Published private(set) var currentDay: Date = AppClock.calendar.startOfDay(for: AppClock.now)
+
     // Navigation trigger for the pencil button
     @Published var showChangeGoal = false
     @Published var showCalendar = false
@@ -29,6 +32,9 @@ class CurrentDayViewModel: ObservableObject {
 
     private let service: GoalStorageService
     private var cancellables = Set<AnyCancellable>()
+
+    /// The streak starts over after more than this many hours without logging or freezing
+    private let streakLimitInHours: Double = 32
 
     init(service: GoalStorageService = .shared) {
         self.service = service
@@ -44,11 +50,56 @@ class CurrentDayViewModel: ObservableObject {
     }
 
     private func goalChanged(to newGoal: LearningGoal?) {
+        // Same goal edited (e.g. only the duration)? The id stays the same: keep the progress.
+        let isDifferentGoal = newGoal?.id != currentGoal?.id
         currentGoal = newGoal
+        guard isDifferentGoal else { return }
+
         streakCount = 0
         freezeCount = 0
         dayStatus = .normal
         showCompletion = false   // closes the completion pages that are open on top
+    }
+
+
+    // MARK: - Time rules (12AM and 32 hours)
+
+    /// Called when the page appears, when the app comes back, and every 30 seconds.
+    func refresh() {
+        // Rule 1: a new day starts at 12AM.
+        // The day the page shows is the day of "now". Its status comes from the history,
+        // so a new day with no record is .normal (the buttons are fresh again).
+        let today = AppClock.calendar.startOfDay(for: AppClock.now)
+        if currentDay != today {
+            currentDay = today
+        }
+
+        let status = todayStatus(for: currentGoal)
+        if dayStatus != status {
+            dayStatus = status
+        }
+
+        // Rule 2: more than 32 hours without logging or freezing = the streak starts over.
+        checkStreakExpiry()
+    }
+
+    /// Today's status for this goal, read from the history. No record = .normal.
+    private func todayStatus(for goal: LearningGoal?) -> DayStatus {
+        guard let record = service.day(on: AppClock.now),
+              record.goalID == goal?.id else { return .normal }
+        return record.status
+    }
+
+    private func checkStreakExpiry() {
+        // Nothing to reset if the streak is already 0 or the user never logged anything
+        guard streakCount > 0,
+              let lastActivity = service.lastActivityDate(for: currentGoal) else { return }
+
+        let hoursPassed = AppClock.now.timeIntervalSince(lastActivity) / 3600
+
+        if hoursPassed > streakLimitInHours {
+            streakCount = 0
+        }
     }
 
 
@@ -89,7 +140,7 @@ class CurrentDayViewModel: ObservableObject {
         formatter.locale = Locale(identifier: "en_US")
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.dateFormat = "EEEE, d MMMM"
-        return formatter.string(from: Date())
+        return formatter.string(from: AppClock.now)
     }
 
     /// The 7 days of this week, each one with its real status from the history
@@ -144,14 +195,13 @@ class CurrentDayViewModel: ObservableObject {
 /// DEBUG: writes the chosen statuses for this week, then opens the completion page.
 /// All 7 days learned/frozen = completed, otherwise = notMet.
 func debugApplyWeek(_ statuses: [DayStatus]) {
-    var calendar = Calendar(identifier: .gregorian)
-    calendar.firstWeekday = 1
-    guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: Date())?.start else { return }
+    let calendar = AppClock.calendar
+    guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: AppClock.now)?.start else { return }
 
     for (offset, status) in statuses.enumerated() {
         guard let date = calendar.date(byAdding: .day, value: offset, to: weekStart) else { continue }
         service.setStatus(status, on: date)
-        if calendar.isDateInToday(date) { dayStatus = status }
+        if calendar.isDate(date, inSameDayAs: AppClock.now) { dayStatus = status }
     }
 
     streakCount = statuses.filter { $0 == .learned }.count
@@ -162,6 +212,13 @@ func debugApplyWeek(_ statuses: [DayStatus]) {
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
         self?.showCompletion = true
     }
+}
+
+/// DEBUG: moves the app's clock forward, then runs the time rules again.
+func debugTimeTravel(hours: Double) {
+    AppClock.offset += hours * 3600
+    refresh()
+    objectWillChange.send()
 }
 #endif
 

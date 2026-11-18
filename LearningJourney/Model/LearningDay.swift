@@ -13,5 +13,6 @@ struct LearningDay: Identifiable {
     let date: Date          // always the start of that day
     var status: DayStatus
     var goalID: UUID?       // which goal the user was following that day
+    var loggedAt: Date      // the exact moment the user logged it (used by the 32 hours rule)
     var id: Date { date }
 }

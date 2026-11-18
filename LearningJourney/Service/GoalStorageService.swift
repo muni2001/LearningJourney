@@ -54,6 +54,14 @@ class GoalStorageService: ObservableObject {
         currentGoal = LearningGoal(subject: subject, duration: duration)
     }
 
+    /// Same goal, just edited (e.g. longer duration). Keeps the id, start date and history.
+    func updateCurrentGoal(subject: String, duration: LearningDuration) {
+        guard var goal = currentGoal else { return }
+        goal.subject = subject
+        goal.duration = duration
+        currentGoal = goal
+    }
+
     /// Finds a goal (current or past) by its id. Optional: it may not exist.
     func goal(withID id: UUID) -> LearningGoal? {
         if let current = currentGoal, current.id == id {
@@ -73,13 +81,16 @@ class GoalStorageService: ObservableObject {
     // MARK: - Days history
 
     /// Saves the status of a day. Setting .normal removes the record (undo).
-    func setStatus(_ status: DayStatus, on date: Date = Date()) {
+    func setStatus(_ status: DayStatus, on date: Date = AppClock.now) {
         let key = Self.startOfDay(date)
 
         if status == .normal {
             days[key] = nil
         } else {
-            days[key] = LearningDay(date: key, status: status, goalID: currentGoal?.id)
+            days[key] = LearningDay(date: key,
+                                    status: status,
+                                    goalID: currentGoal?.id,
+                                    loggedAt: AppClock.now)
         }
     }
 
@@ -87,12 +98,15 @@ class GoalStorageService: ObservableObject {
     func day(on date: Date) -> LearningDay? {
         days[Self.startOfDay(date)]
     }
-    /// Same goal, just edited (e.g. longer duration). Keeps the id, start date and history.
-    func updateCurrentGoal(subject: String, duration: LearningDuration) {
-        guard var goal = currentGoal else { return }
-        goal.subject = subject
-        goal.duration = duration
-        currentGoal = goal
+
+    /// The last moment the user logged or froze a day in this goal (for the 32 hours rule).
+    /// nil if there is no record yet.
+    func lastActivityDate(for goal: LearningGoal?) -> Date? {
+        guard let goal else { return nil }
+        return days.values
+            .filter { $0.goalID == goal.id }
+            .map { $0.loggedAt }
+            .max()
     }
 
 
@@ -106,7 +120,6 @@ class GoalStorageService: ObservableObject {
     }
 
     private static func startOfDay(_ date: Date) -> Date {
-        Calendar(identifier: .gregorian).startOfDay(for: date)
+        AppClock.calendar.startOfDay(for: date)
     }
 }
-

@@ -20,10 +20,9 @@ extension WeekDay {
     /// The 7 days of the current week (Sunday first).
     /// statusFor tells the status of each date. By default every day is empty (.normal).
     static func currentWeek(statusFor: (Date) -> DayStatus = { _ in .normal }) -> [WeekDay] {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.firstWeekday = 1
+        let calendar = AppClock.calendar
 
-        guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: Date())?.start else {
+        guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: AppClock.now)?.start else {
             return []
         }
 
@@ -37,7 +36,7 @@ extension WeekDay {
             return WeekDay(id: number,
                            letter: letters[offset],
                            number: number,
-                           isToday: calendar.isDateInToday(date),
+                           isToday: calendar.isDate(date, inSameDayAs: AppClock.now),
                            status: statusFor(date))
         }
     }
