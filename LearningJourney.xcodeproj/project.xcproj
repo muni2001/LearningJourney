@@ -20,7 +20,7 @@
         { "path": "<PRODUCTS>/LearningJourney.app", "id": "BEA2DA4D30A1B2B300C0278C", "type": "wrapper.application", "index": false },
       ],
     },
-    { "kind": "folder", "path": "shared", "target-membership": [ "LearningJourney" ] },
+    { "kind": "folder", "path": "Components", "target-membership": [ "LearningJourney" ] },
   ],
   "targets": [
     {
@@ -39,6 +39,7 @@
         "ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS": "NO",
         "CODE_SIGN_STYLE": "Automatic",
         "CURRENT_PROJECT_VERSION": "1",
+        "DEVELOPMENT_TEAM": "NH9564R353",
         "ENABLE_PREVIEWS": "YES",
         "GENERATE_INFOPLIST_FILE": "YES",
         "INFOPLIST_KEY_UIApplicationSceneManifest_Generation": "YES",

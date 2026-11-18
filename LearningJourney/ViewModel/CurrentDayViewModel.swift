@@ -83,11 +83,17 @@ class CurrentDayViewModel: ObservableObject {
         checkStreakExpiry()
     }
 
-    /// Today's status for this goal, read from the history. No record = .normal.
-    private func todayStatus(for goal: LearningGoal?) -> DayStatus {
-        guard let record = service.day(on: AppClock.now),
+    /// The status of a day, but ONLY if that day belongs to this goal.
+    /// A day with no record, or a record of another goal, counts as .normal.
+    private func status(on date: Date, for goal: LearningGoal?) -> DayStatus {
+        guard let record = service.day(on: date),
               record.goalID == goal?.id else { return .normal }
         return record.status
+    }
+
+    /// Today's status for this goal, read from the history.
+    private func todayStatus(for goal: LearningGoal?) -> DayStatus {
+        status(on: AppClock.now, for: goal)
     }
 
     private func checkStreakExpiry() {
@@ -143,10 +149,11 @@ class CurrentDayViewModel: ObservableObject {
         return formatter.string(from: AppClock.now)
     }
 
-    /// The 7 days of this week, each one with its real status from the history
+    /// The 7 days of this week. Each day shows its status ONLY for the current goal,
+    /// so when the user starts a new goal the strip starts clean.
     var weekDays: [WeekDay] {
         WeekDay.currentWeek { date in
-            self.service.day(on: date)?.status ?? .normal
+            self.status(on: date, for: self.currentGoal)
         }
     }
 
