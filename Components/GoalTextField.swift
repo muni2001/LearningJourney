@@ -7,10 +7,11 @@
 
 import SwiftUI
 
+/// "I want to learn" + the underlined text field. Shakes when `shakeTrigger` changes.
 struct GoalTextField: View {
     @Binding var text: String
     let placeholder: String
-    let shakeTrigger: Int
+    var shakeTrigger: Int = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {

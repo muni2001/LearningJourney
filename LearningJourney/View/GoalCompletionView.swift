@@ -27,9 +27,14 @@ struct GoalCompletionView: View {
             Color.black.ignoresSafeArea()
 
             VStack(spacing: 24) {
-                header
-                weekStrip
-                statsCards
+                ActivityHeader(dateText: viewModel.todayText,
+                               onCalendar: viewModel.calendarTapped,
+                               onGoal: viewModel.setGoalTapped)
+
+                WeekStripView(days: viewModel.weekDays, highlightsToday: false)
+
+                StatsCardsView(streakCount: viewModel.streakCount,
+                               freezeCount: viewModel.freezeCount)
 
                 resultBlock
                     .padding(.top, 50)
@@ -48,120 +53,6 @@ struct GoalCompletionView: View {
         .navigationDestination(isPresented: $viewModel.showCalendar) {
             CalendarView()
         }
-    }
-
-
-    // MARK: - Header
-
-    private var header: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Activity")
-                    .font(.system(size: 34, weight: .bold))
-                    .foregroundColor(.white)
-
-                Text(viewModel.todayText)
-                    .font(.system(size: 15))
-                    .foregroundColor(.gray)
-            }
-
-            Spacer()
-
-            HStack(spacing: 12) {
-                circleIconButton(systemName: "calendar") {
-                    viewModel.calendarTapped()
-                }
-                circleIconButton(systemName: "pencil.and.outline") {
-                    viewModel.setGoalTapped()
-                }
-            }
-        }
-        .padding(.top, 10)
-    }
-
-    private func circleIconButton(systemName: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 18))
-                .foregroundColor(.white)
-                .frame(width: 44, height: 44)
-                .glassEffect(.regular, in: Circle())
-        }
-        .buttonStyle(.plain)
-    }
-
-
-    // MARK: - Week strip (each day is colored by its own status)
-
-    private var weekStrip: some View {
-        HStack(spacing: 0) {
-            ForEach(viewModel.weekDays) { day in
-                VStack(spacing: 5) {
-                    Text(day.letter)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.white)
-
-                    Text("\(day.number)")
-                        .font(.system(size: 25, weight: .medium))
-                        .foregroundColor(dayTextColor(day.status))
-                        .frame(width: 44, height: 44)
-                        .background(Circle().fill(dayCircleColor(day.status)))
-                }
-                .frame(maxWidth: .infinity)
-            }
-        }
-    }
-
-    private func dayCircleColor(_ status: DayStatus) -> Color {
-        switch status {
-        case .normal:  return .clear
-        case .learned: return Color("learn").opacity(0.2)
-        case .frozen:  return Color("freeze").opacity(0.2)
-        }
-    }
-
-    private func dayTextColor(_ status: DayStatus) -> Color {
-        switch status {
-        case .normal:  return .white
-        case .learned: return Color("learn")
-        case .frozen:  return Color("freeze")
-        }
-    }
-
-
-    // MARK: - Streak / Freeze cards
-
-    private var statsCards: some View {
-        HStack(spacing: 13) {
-            statCard(icon: "flame.fill",
-                     color: Color("learn"),
-                     count: viewModel.streakCount,
-                     title: "Learned")
-
-            statCard(icon: "snowflake",
-                     color: Color("freeze"),
-                     count: viewModel.freezeCount,
-                     title: "Freezed")
-        }
-    }
-
-    private func statCard(icon: String, color: Color, count: Int, title: String) -> some View {
-        VStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(color)
-
-            Text(viewModel.daysText(count))
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(.white)
-
-            Text(title)
-                .font(.system(size: 13))
-                .foregroundColor(.white)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 100)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 30))
     }
 
 

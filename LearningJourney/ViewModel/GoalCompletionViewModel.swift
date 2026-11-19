@@ -20,6 +20,8 @@ class GoalCompletionViewModel: ObservableObject {
     @Published var showSetNewGoal = false
     @Published var showCalendar = false
 
+    private let dayTitleFormatter = DateFormatter.english(DatePattern.dayTitle)
+
     init(result: GoalResult,
          weekDays: [WeekDay] = WeekDay.currentWeek(),
          streakCount: Int = 0,
@@ -54,19 +56,8 @@ class GoalCompletionViewModel: ObservableObject {
         }
     }
 
-
-    // MARK: - Helpers
-
-    func daysText(_ count: Int) -> String {
-        count == 1 ? "\(count) day" : "\(count) days"
-    }
-
     var todayText: String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.dateFormat = "EEEE, d MMMM"
-        return formatter.string(from: Date())
+        dayTitleFormatter.string(from: AppClock.now)
     }
 
 

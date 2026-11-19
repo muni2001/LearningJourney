@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum DayStatus {
+enum DayStatus: String, Codable {
     case normal
     case learned
     case frozen
@@ -21,3 +21,4 @@ enum DayStatus {
         }
     }
 }
+

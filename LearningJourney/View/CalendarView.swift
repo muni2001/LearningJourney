@@ -116,31 +116,15 @@ struct CalendarView: View {
             } label: {
                 Text("\(number)")
                     .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(textColor(for: cell))
+                    .foregroundColor(cell.status.textColor)
                     .frame(width: 42, height: 42)
-                    .background(Circle().fill(circleColor(for: cell)))
+                    .background(Circle().fill(cell.status.circleColor(isToday: cell.isToday)))
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.plain)
         } else {
             Color.clear
                 .frame(width: 42, height: 42)
-        }
-    }
-
-    private func circleColor(for cell: CalendarCell) -> Color {
-        switch cell.status {
-        case .learned: return Color("learn").opacity(0.2)
-        case .frozen:  return Color("freeze").opacity(0.2)
-        case .normal:  return cell.isToday ? Color("learn") : .clear
-        }
-    }
-
-    private func textColor(for cell: CalendarCell) -> Color {
-        switch cell.status {
-        case .learned: return Color("learn")
-        case .frozen:  return Color("freeze")
-        case .normal:  return .white
         }
     }
 }

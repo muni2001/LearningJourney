@@ -10,16 +10,16 @@ import Combine
 
 class ChangeLearningGoalViewModel: ObservableObject {
 
+    enum UpdateAlertKind { case newGoal, durationOnly }
+    private enum Change { case none, durationOnly, newGoal }
+
     @Published var newSubject: String = ""
     @Published var selectedDuration: LearningDuration = .week
 
     @Published var showUpdateAlert = false
     @Published var shakeTrigger = 0
     @Published var shouldDismiss = false   // the view closes itself when this becomes true
-    enum UpdateAlertKind { case newGoal, durationOnly }
-    @Published var alertKind: UpdateAlertKind = .newGoal
-
-    private enum Change { case none, durationOnly, newGoal }
+    @Published private(set) var alertKind: UpdateAlertKind = .newGoal
 
     private let service: GoalStorageService
 
@@ -37,20 +37,25 @@ class ChangeLearningGoalViewModel: ObservableObject {
         newSubject.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private var change: Change {
-        guard let current = service.currentGoal else { return .newGoal }
-        let edited = GoalDraft(subject: trimmedSubject, duration: selectedDuration)
-
-        if edited == current.draft { return .none }
-        if edited.subject == current.draft.subject { return .durationOnly }
-        return .newGoal
+    /// What the user typed, ready to compare with the current goal
+    private var editedDraft: GoalDraft {
+        GoalDraft(subject: newSubject, duration: selectedDuration)
     }
+
     /// Same subject as the current goal? (ignores spaces and letter case)
     private var isSameSubject: Bool {
-        guard let current = service.currentGoal else { return false }
-        return GoalDraft(subject: trimmedSubject, duration: current.duration).subject
-            == current.draft.subject
+        editedDraft.subject == service.currentGoal?.draft.subject
     }
+
+    private var change: Change {
+        guard let current = service.currentGoal else { return .newGoal }
+
+        if editedDraft == current.draft { return .none }
+        return isSameSubject ? .durationOnly : .newGoal
+    }
+
+
+    // MARK: - Duration rules
 
     /// With the same subject, the duration can only stay or grow. A new subject can use any duration.
     func isDurationAllowed(_ duration: LearningDuration) -> Bool {
@@ -67,7 +72,22 @@ class ChangeLearningGoalViewModel: ObservableObject {
         }
     }
 
-    /// Checkmark button
+
+    // MARK: - Alert texts
+
+    var alertTitle: String {
+        alertKind == .newGoal ? "Update goal" : "Change duration?"
+    }
+
+    var alertMessage: String {
+        alertKind == .newGoal
+            ? "If you update now, your streak will start over."
+            : "Your streak and freezes will stay the same, and you can continue your learning journey."
+    }
+
+
+    // MARK: - Actions
+
     /// Checkmark button
     func confirmTapped() {
         guard !trimmedSubject.isEmpty else {
@@ -89,6 +109,10 @@ class ChangeLearningGoalViewModel: ObservableObject {
 
     func cancelUpdate() {
         showUpdateAlert = false
+        // Dismissing a duration change leaves the page: nothing was changed
+        if alertKind == .durationOnly {
+            shouldDismiss = true
+        }
     }
 
     func updateConfirmed() {
@@ -100,5 +124,7 @@ class ChangeLearningGoalViewModel: ObservableObject {
             service.replaceCurrentGoal(subject: trimmedSubject, duration: selectedDuration)
         }
         showUpdateAlert = false
+        shouldDismiss = true
     }
 }
+

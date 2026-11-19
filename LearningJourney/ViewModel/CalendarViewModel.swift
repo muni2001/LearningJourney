@@ -15,12 +15,10 @@ class CalendarViewModel: ObservableObject {
 
     private let service: GoalStorageService
 
-    // Gregorian calendar, week starts on Sunday (same as the rest of the app)
-    private let calendar: Calendar = {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.firstWeekday = 1
-        return calendar
-    }()
+    // Same calendar as the rest of the app (Gregorian, week starts on Sunday)
+    private let calendar = AppClock.calendar
+    private let monthTitleFormatter = DateFormatter.english(DatePattern.monthTitle)
+    private let dayTitleFormatter = DateFormatter.english(DatePattern.dayTitle)
 
     init(service: GoalStorageService = .shared) {
         self.service = service
@@ -86,7 +84,7 @@ class CalendarViewModel: ObservableObject {
                                       isToday: calendar.isDate(date, inSameDayAs: AppClock.now)))
         }
 
-        return CalendarMonth(id: start, title: format(start, "MMMM yyyy"), cells: cells)
+        return CalendarMonth(id: start, title: monthTitleFormatter.string(from: start), cells: cells)
     }
 
 
@@ -104,21 +102,10 @@ class CalendarViewModel: ObservableObject {
         }
         lines.append("Status: \(record.status.displayName)")
 
-        selectedInfo = DayInfo(title: format(date, "EEEE, d MMMM"), lines: lines)
+        selectedInfo = DayInfo(title: dayTitleFormatter.string(from: date), lines: lines)
     }
 
     func closePopup() {
         selectedInfo = nil
-    }
-
-
-    // MARK: - Helpers
-
-    private func format(_ date: Date, _ pattern: String) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.dateFormat = pattern
-        return formatter.string(from: date)
     }
 }

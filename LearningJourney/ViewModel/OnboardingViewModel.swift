@@ -11,7 +11,6 @@ import Combine
 class OnboardingViewModel: ObservableObject {
     @Published var learningSubject: String = ""
     @Published var selectedDuration: LearningDuration = .week
-    @Published var navigateToActivity = false
 
     private let service: GoalStorageService
 
@@ -19,17 +18,18 @@ class OnboardingViewModel: ObservableObject {
         self.service = service
     }
 
-    var isFormValid: Bool {
-        return !learningSubject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    private var trimmedSubject: String {
+        learningSubject.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    var isFormValid: Bool {
+        !trimmedSubject.isEmpty
+    }
+
+    /// Saves the first goal. The app opens the Activity page by itself
+    /// as soon as a goal exists (see LearningJourneyApp).
     func startLearningTapped() {
         guard isFormValid else { return }
-
-        service.startGoal(
-            subject: learningSubject.trimmingCharacters(in: .whitespacesAndNewlines),
-            duration: selectedDuration
-        )
-        navigateToActivity = true
+        service.startGoal(subject: trimmedSubject, duration: selectedDuration)
     }
 }

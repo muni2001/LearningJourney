@@ -7,8 +7,12 @@
 
 import SwiftUI
 
+/// "I want to learn it in a" + the Week / Month / Year buttons.
 struct DurationPickerView: View {
     @Binding var selection: LearningDuration
+
+    /// A page can turn some durations off (for example, shorter than the current goal)
+    var isAllowed: (LearningDuration) -> Bool = { _ in true }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -18,6 +22,8 @@ struct DurationPickerView: View {
 
             HStack(spacing: 13) {
                 ForEach(LearningDuration.allCases, id: \.self) { duration in
+                    let allowed = isAllowed(duration)
+
                     Button {
                         selection = duration
                     } label: {
@@ -34,6 +40,8 @@ struct DurationPickerView: View {
                             )
                     }
                     .buttonStyle(.plain)
+                    .disabled(!allowed)
+                    .opacity(allowed ? 1 : 0.35)
                 }
                 Spacer()
             }

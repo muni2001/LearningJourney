@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import Combine
 
 struct CurrentDayView: View {
     @StateObject private var viewModel = CurrentDayViewModel()
@@ -17,9 +16,17 @@ struct CurrentDayView: View {
             Color.black.ignoresSafeArea()
 
             VStack(spacing: 24) {
-                header
-                weekStrip
-                statsCards
+                ActivityHeader(dateText: viewModel.todayText,
+                               onCalendar: viewModel.calendarTapped,
+                               onGoal: viewModel.setGoalTapped)
+                #if DEBUG
+                .onLongPressGesture { viewModel.showDebugPanel = true }
+                #endif
+
+                WeekStripView(days: viewModel.weekDays)
+
+                StatsCardsView(streakCount: viewModel.streakCount,
+                               freezeCount: viewModel.freezeCount)
 
                 Spacer()
 
@@ -44,8 +51,11 @@ struct CurrentDayView: View {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active { viewModel.refresh() }
         }
-        .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { _ in
-            viewModel.refresh()
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(30))
+                viewModel.refresh()
+            }
         }
         .navigationDestination(isPresented: $viewModel.showChangeGoal) {
             ChangeLearningGoalView()
@@ -59,134 +69,17 @@ struct CurrentDayView: View {
                                streakCount: viewModel.streakCount,
                                freezeCount: viewModel.freezeCount)
         }
-#if DEBUG
-.sheet(isPresented: $viewModel.showDebugPanel) {
-    DebugWeekSheet(days: viewModel.weekDays) { statuses in
-        viewModel.debugApplyWeek(statuses)
-    }
-}
-#endif
-    }
-
-
-    private var header: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Activity")
-                    .font(.system(size: 34, weight: .bold))
-                    .foregroundColor(.white)
-#if DEBUG
-.onLongPressGesture { viewModel.showDebugPanel = true }
-#endif
-                Text(viewModel.todayText)
-                    .font(.system(size: 15))
-                    .foregroundColor(.gray)
-#if DEBUG
-.onLongPressGesture { viewModel.debugTimeTravel(hours: 24) }   // +1 day
-.onTapGesture(count: 2) { viewModel.debugTimeTravel(hours: 33) }   // +33 hours
-#endif
-            }
-
-            Spacer()
-
-            HStack(spacing: 12) {
-                circleIconButton(systemName: "calendar") {
-                    viewModel.calendarTapped()
-                }
-                circleIconButton(systemName: "pencil.and.outline") {
-                    viewModel.setGoalTapped()
-                }
-            }
+        #if DEBUG
+        .sheet(isPresented: $viewModel.showDebugPanel) {
+            DebugWeekSheet(days: viewModel.weekDays,
+                           onApply: { viewModel.debugApplyWeek($0) },
+                           onTimeTravel: { viewModel.debugTimeTravel(hours: $0) })
         }
-        .padding(.top, 10)
-    }
-
-    private func circleIconButton(systemName: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 18))
-                .foregroundColor(.white)
-                .frame(width: 44, height: 44)
-                .glassEffect(.regular, in: Circle())
-        }
-        .buttonStyle(.plain)
+        #endif
     }
 
 
-    private var weekStrip: some View {
-        HStack(spacing: 0) {
-            ForEach(viewModel.weekDays) { day in
-                VStack(spacing: 5) {
-                    Text(day.letter)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.white)
-
-                    Text("\(day.number)")
-                        .font(.system(size: 25, weight: .medium))
-                        .foregroundColor(dayTextColor(day))
-                        .frame(width: 44, height: 44)
-                        .background(Circle().fill(dayCircleColor(day)))
-                }
-                .frame(maxWidth: .infinity)
-            }
-        }
-    }
-
-    /// Today follows the buttons (dayStatus). The other days come from the history.
-    private func status(of day: WeekDay) -> DayStatus {
-        day.isToday ? viewModel.dayStatus : day.status
-    }
-
-    private func dayCircleColor(_ day: WeekDay) -> Color {
-        switch status(of: day) {
-        case .learned: return Color("learn").opacity(0.2)
-        case .frozen:  return Color("freeze").opacity(0.2)
-        case .normal:  return day.isToday ? Color("learn") : .clear
-        }
-    }
-
-    private func dayTextColor(_ day: WeekDay) -> Color {
-        switch status(of: day) {
-        case .learned: return Color("learn")
-        case .frozen:  return Color("freeze")
-        case .normal:  return .white
-        }
-    }
-
-
-    private var statsCards: some View {
-        HStack(spacing: 13) {
-            statCard(icon: "flame.fill",
-                     color: Color("learn"),
-                     count: viewModel.streakCount,
-                     title: "Learned")
-
-            statCard(icon: "snowflake",
-                     color: Color("freeze"),
-                     count: viewModel.freezeCount,
-                     title: "Freezed")
-        }
-    }
-
-    private func statCard(icon: String, color: Color, count: Int, title: String) -> some View {
-        VStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(color)
-
-            Text(viewModel.daysText(count))
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(.white)
-
-            Text(title)
-                .font(.system(size: 13))
-                .foregroundColor(.white)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 100)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 30))
-    }
-
+    // MARK: - Log button
 
     private var logButton: some View {
         Button {
@@ -211,6 +104,8 @@ struct CurrentDayView: View {
         viewModel.dayStatus == .learned ? .gray : .white
     }
 
+
+    // MARK: - Freeze button
 
     private var freezeButton: some View {
         Button {
@@ -239,3 +134,4 @@ struct CurrentDayView: View {
     }
     .preferredColorScheme(.dark)
 }
+

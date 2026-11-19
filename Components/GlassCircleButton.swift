@@ -11,12 +11,13 @@ import SwiftUI
 struct GlassCircleButton: View {
     let systemName: String
     var tint: Color? = nil
+    var weight: Font.Weight = .semibold
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 18, weight: .semibold))
+                .font(.system(size: 18, weight: weight))
                 .foregroundColor(.white)
                 .frame(width: 44, height: 44)
                 .glassEffect(.regular.tint(tint), in: Circle())
@@ -24,3 +25,4 @@ struct GlassCircleButton: View {
         .buttonStyle(.plain)
     }
 }
+

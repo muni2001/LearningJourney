@@ -8,17 +8,22 @@
 #if DEBUG
 import SwiftUI
 
-/// DEBUG ONLY: lets the reviewer fill the week and jump to the completion page.
+/// DEBUG ONLY: lets the reviewer fill the week, jump to the completion page,
+/// or move the app's clock forward to see the 12AM and 32 hours rules.
 struct DebugWeekSheet: View {
     let days: [WeekDay]
     let onApply: ([DayStatus]) -> Void
+    let onTimeTravel: (Double) -> Void
 
     @State private var statuses: [DayStatus]
     @Environment(\.dismiss) private var dismiss
 
-    init(days: [WeekDay], onApply: @escaping ([DayStatus]) -> Void) {
+    init(days: [WeekDay],
+         onApply: @escaping ([DayStatus]) -> Void,
+         onTimeTravel: @escaping (Double) -> Void) {
         self.days = days
         self.onApply = onApply
+        self.onTimeTravel = onTimeTravel
         _statuses = State(initialValue: days.map(\.status))
     }
 
@@ -61,6 +66,24 @@ struct DebugWeekSheet: View {
                     }
                 }
 
+                VStack(spacing: 10) {
+                    Text("Move the app's clock forward")
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+
+                    HStack(spacing: 10) {
+                        presetButton("+1 day (12 AM)") {
+                            onTimeTravel(24)
+                            dismiss()
+                        }
+                        presetButton("+33 hours (32h rule)") {
+                            onTimeTravel(33)
+                            dismiss()
+                        }
+                    }
+                }
+                .padding(.top, 8)
+
                 Spacer()
 
                 Button {
@@ -96,3 +119,4 @@ struct DebugWeekSheet: View {
     }
 }
 #endif
+

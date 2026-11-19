@@ -10,7 +10,8 @@ import Combine
 
 /// One shared place that owns the goals and the days history.
 /// Every ViewModel reads from it and asks it to change things.
-class GoalStorageService: ObservableObject {
+/// Everything is saved on the device, so the journey is still there the next time the app opens.
+final class GoalStorageService: ObservableObject {
 
     // One shared instance for the whole app
     static let shared = GoalStorageService()
@@ -23,8 +24,21 @@ class GoalStorageService: ObservableObject {
     /// A day that is not in the dictionary means "no activity".
     @Published private(set) var days: [Date: LearningDay] = [:]
 
+    private let defaults: UserDefaults
+    private let storageKey = "LearningJourney.storedData"
+
+    /// Everything that must survive closing the app.
+    private struct StoredData: Codable {
+        var currentGoal: LearningGoal?
+        var pastGoals: [LearningGoal]
+        var days: [LearningDay]
+    }
+
     // Not private, so Previews can create their own instance when needed
-    init() {}
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        load()
+    }
 
 
     // MARK: - Goals
@@ -32,6 +46,7 @@ class GoalStorageService: ObservableObject {
     /// First goal (from Onboarding)
     func startGoal(subject: String, duration: LearningDuration) {
         currentGoal = LearningGoal(subject: subject, duration: duration)
+        save()
     }
 
     /// The user changes the goal in the middle of the journey.
@@ -39,6 +54,7 @@ class GoalStorageService: ObservableObject {
     func replaceCurrentGoal(subject: String, duration: LearningDuration) {
         archiveCurrentGoal(as: .notCompleted)
         currentGoal = LearningGoal(subject: subject, duration: duration)
+        save()
     }
 
     /// The goal period ended (completed or not met) and the user starts a new one.
@@ -52,6 +68,7 @@ class GoalStorageService: ObservableObject {
 
         archiveCurrentGoal(as: status)
         currentGoal = LearningGoal(subject: subject, duration: duration)
+        save()
     }
 
     /// Same goal, just edited (e.g. longer duration). Keeps the id, start date and history.
@@ -60,6 +77,7 @@ class GoalStorageService: ObservableObject {
         goal.subject = subject
         goal.duration = duration
         currentGoal = goal
+        save()
     }
 
     /// Finds a goal (current or past) by its id. Optional: it may not exist.
@@ -92,6 +110,7 @@ class GoalStorageService: ObservableObject {
                                     goalID: currentGoal?.id,
                                     loggedAt: AppClock.now)
         }
+        save()
     }
 
     /// The record of a day, or nil if the user did nothing that day.
@@ -99,14 +118,9 @@ class GoalStorageService: ObservableObject {
         days[Self.startOfDay(date)]
     }
 
-    /// The last moment the user logged or froze a day in this goal (for the 32 hours rule).
-    /// nil if there is no record yet.
-    func lastActivityDate(for goal: LearningGoal?) -> Date? {
-        guard let goal else { return nil }
-        return days.values
-            .filter { $0.goalID == goal.id }
-            .map { $0.loggedAt }
-            .max()
+    /// Every day the user logged or froze while following this goal.
+    func records(for goal: LearningGoal) -> [LearningDay] {
+        days.values.filter { $0.goalID == goal.id }
     }
 
 
@@ -122,4 +136,23 @@ class GoalStorageService: ObservableObject {
     private static func startOfDay(_ date: Date) -> Date {
         AppClock.calendar.startOfDay(for: date)
     }
+
+    private func save() {
+        let stored = StoredData(currentGoal: currentGoal,
+                                pastGoals: pastGoals,
+                                days: Array(days.values))
+        guard let data = try? JSONEncoder().encode(stored) else { return }
+        defaults.set(data, forKey: storageKey)
+    }
+
+    private func load() {
+        guard let data = defaults.data(forKey: storageKey),
+              let stored = try? JSONDecoder().decode(StoredData.self, from: data) else { return }
+
+        currentGoal = stored.currentGoal
+        pastGoals = stored.pastGoals
+        days = Dictionary(stored.days.map { ($0.date, $0) },
+                          uniquingKeysWith: { _, newest in newest })
+    }
 }
+
