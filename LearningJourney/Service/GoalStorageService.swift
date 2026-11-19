@@ -45,6 +45,7 @@ final class GoalStorageService: ObservableObject {
 
     /// First goal (from Onboarding)
     func startGoal(subject: String, duration: LearningDuration) {
+        archiveCurrentGoal(as: .notCompleted)
         currentGoal = LearningGoal(subject: subject, duration: duration)
         save()
     }

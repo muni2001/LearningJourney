@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  OnboardingView.swift
 //  LearningJourney
 //
 //  Created by Monerah Almousa on 29/05/1448 AH.

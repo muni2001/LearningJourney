@@ -1,5 +1,5 @@
 //
-//  EditGoalViewModel.swift
+//  ChangeLearningGoalViewModel.swift
 //  LearningJourney
 //
 //  Created by Monerah Almousa on 30/05/1448 AH.
